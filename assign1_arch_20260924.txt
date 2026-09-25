@@ -1,0 +1,96 @@
+DAY1 ASSIGNMENT 1
+
+MCQs
+
+Q1: Which architecture does Snowflake use?
+    B) Multi-Cluster Shared Data Architecture
+
+Q2: What is the primary unit of storage in Snowflake?
+    C) Micro-partitions
+
+Q3: How long does the Result Cache retain query results by default?
+    C) 24 hours
+
+Q4: Which Snowflake edition supports Multi-Cluster Warehouses?
+    B) Enterprise and above
+
+Q5: What data type does Snowflake use for semi-structured data like JSON?
+    D) VARIANT
+
+Q6: What is the maximum Time Travel retention period in Snowflake Enterprise?
+    D) 90 days
+
+Q7: What happens to the local SSD cache when a Virtual Warehouse is suspended?
+    B) Cache is cleared immediately
+
+Q8: In Snowflake RBAC, privileges should be granted to:
+    B) Roles, then roles to users
+
+Q9: Zero-Copy Cloning in Snowflake works by:
+    C) Sharing micro-partitions via metadata with copy-on-write
+
+Q10: Which billing unit does Snowflake use for compute?
+    C) Snowflake Credits
+
+Q11: What is Snowpipe used for?
+    B) Continuous/streaming data ingestion
+
+Q12: A Transient table in Snowflake differs from a Permanent table by:
+    B) It has no Time Travel or Fail-Safe, reducing storage cost
+
+Q13: What is a Stream in Snowflake?
+    B) A CDC object that tracks DML changes on a table
+
+Q14: What is the purpose of the COPY INTO command?
+    C) Bulk load data from a stage into a table
+
+Q15: Which of the following is NOT a layer in Snowflake's architecture?
+    C) Transaction Processing Layer
+
+SCENARIO-BASED ANSWERS
+
+Scenario 1:
+
+A retail company has 500 business analysts all running reports simultaneously on the same Snowflake warehouse. Performance is degrading. What is the BEST solution?
+
+Enable Multi-Cluster Warehouses with AUTO_SCALE mode on the reporting warehouse. This automatically adds additional compute clusters when there is high concurrency and query queuing. A separate reporting warehouse can also be used to isolate reporting workloads from ETL workloads.
+
+Scenario 2:
+
+A data engineer accidentally ran DELETE FROM sales WHERE 1=1, deleting all 50 million rows from the sales table 2 hours ago. How do you recover?
+
+Use Time Travel to recover the data from before the deletion.
+
+CREATE TABLE sales_recovered AS
+SELECT *
+FROM sales AT (OFFSET => -7200);
+
+After verifying the recovered data, the original table can be restored or replaced as required.
+
+Scenario 3:
+
+Your organization needs to share daily sales summary data with 10 partner companies who also use Snowflake. What is the most efficient approach?
+
+Use Snowflake Secure Data Sharing. Create a share containing the required sales summary data and provide access to the partner Snowflake accounts. This allows partners to access the data without creating duplicate copies or using traditional ETL pipelines.
+
+Scenario 4:
+
+The development team requests a copy of the 10 TB production database for testing. How do you provide it without spending 10 TB of extra storage?
+
+Use Zero-Copy Cloning.
+
+CREATE DATABASE prod_dev_clone
+CLONE production_db;
+
+The clone initially shares the existing micro-partitions with the production database, so a complete physical copy is not required. Additional storage is used when changes are made to the clone.
+
+Scenario 5:
+
+A customer is worried about Snowflake costs spiraling out of control. What are the top 3 cost controls to implement immediately?
+
+1. Enable AUTO_SUSPEND on warehouses so that idle warehouses automatically stop running.
+
+2. Create Resource Monitors to track credit consumption and set appropriate thresholds.
+
+3. Right-size warehouses according to the workload instead of using unnecessarily large warehouses.
+
