@@ -1,0 +1,147 @@
+DAY2 ASSIGNMENT2
+
+Q1: Which system role should be used to create databases, schemas, and warehouses?
+Answer: C) SYSADMIN
+
+Q2: In Snowflake RBAC, what does 'GRANT ROLE R1 TO ROLE R2' mean?
+Answer: B) R2 inherits all privileges of R1
+
+Q3: A user queries a table and gets 'Access Denied.' Which of these is NOT a likely cause?
+Answer: C) Virtual Warehouse too small for the query
+
+Q4: What is the recommended authentication method for service accounts and ETL pipelines?
+Answer: C) Key-Pair (RSA) Authentication
+
+Q5: How does Dynamic Data Masking differ from creating separate masked tables/views?
+Answer: C) DDM applies dynamically at query time from ONE table — no data duplication
+
+Q6: Which privilege is required at BOTH database and schema level before a user can access any table?
+Answer: C) USAGE
+
+Q7: What is the purpose of FUTURE GRANTS in Snowflake?
+Answer: B) Auto-apply privileges to objects created in the future in a schema
+
+Q8: A Network Policy is applied at BOTH account level AND user level. Which takes precedence?
+Answer: B) User-level policy overrides account-level for that user
+
+Q9: ACCOUNTADMIN should be used for which of the following tasks?
+Answer: C) Setting account-level parameters and managing billing
+
+Q10: Which Snowflake table in the ACCOUNT_USAGE schema tracks all SQL queries executed?
+Answer: B) QUERY_HISTORY
+
+Q11: What happens when a role is granted to another role in Snowflake?
+Answer: C) The grantee role inherits all privileges of the granted role
+
+Q12: Which feature controls WHICH ROWS a user can see in a query result based on their role?
+Answer: C) Row Access Policy
+
+Q13: Which ACCOUNT_USAGE view should you query to find users who have never logged in?
+Answer: C) USERS
+
+Q14: What is the minimum requirement to connect a BI tool like Tableau to Snowflake securely?
+Answer: B) A user with SELECT on tables + USAGE on warehouse + OAuth or key-pair auth
+
+Q15: Why must every custom role be granted to SYSADMIN?
+Answer: B) So SYSADMIN can manage (DROP, ALTER, TRANSFER) objects owned by custom roles
+
+SCENARIO-BASED ANSWERS
+
+Scenario 1: The Access Denied Mystery
+
+Sarah is a Data Analyst. She was granted SELECT on SALES_DB.REPORTING.SALES_FACT but gets: 'SQL access control error: Insufficient privileges to operate on schema SALES_DB.REPORTING'. Diagnose and fix.
+
+Answer:
+
+Sarah needs USAGE privileges on both the database and schema in addition to SELECT on the table.
+
+Required grants:
+
+GRANT USAGE ON DATABASE SALES_DB TO ROLE <ANALYST_ROLE>;
+
+GRANT USAGE ON SCHEMA SALES_DB.REPORTING TO ROLE <ANALYST_ROLE>;
+
+GRANT SELECT ON TABLE SALES_DB.REPORTING.SALES_FACT TO ROLE <ANALYST_ROLE>;
+
+The issue is that SELECT on a table alone is not sufficient. The role must also have USAGE on the database and schema.
+
+Scenario 2: The Service Account Breach
+
+An ETL service account 'svc_dbt' has SYSADMIN role. A security audit flags this as critical. Why is this a problem and what is the correct fix?
+
+Answer:
+
+Giving SYSADMIN to an ETL service account violates the principle of least privilege because SYSADMIN has broad privileges to create and manage databases, schemas, warehouses, and other objects.
+
+The correct fix is to create a dedicated custom role for the ETL service account and grant only the privileges required for the ETL process.
+
+Example:
+
+CREATE ROLE ETL_ROLE;
+
+GRANT ROLE ETL_ROLE TO USER svc_dbt;
+
+Then grant only the required privileges to ETL_ROLE, such as USAGE, SELECT, INSERT, UPDATE, DELETE, and CREATE privileges on the required objects.
+
+Scenario 3: The New Table Problem
+
+A data engineer creates a new table SALES_DB.REPORTING.Q4_SUMMARY. The analytics team immediately complains they cannot see it, even though they have SELECT on all other reporting tables.
+
+Answer:
+
+The analytics team probably has SELECT privileges on existing tables but does not have a future grant for newly created tables.
+
+Use a future grant so that SELECT is automatically granted on tables created in the schema.
+
+GRANT SELECT ON FUTURE TABLES IN SCHEMA SALES_DB.REPORTING
+TO ROLE ANALYST_ROLE;
+
+The existing table can also be granted separately if required:
+
+GRANT SELECT ON TABLE SALES_DB.REPORTING.Q4_SUMMARY
+TO ROLE ANALYST_ROLE;
+
+Scenario 4: Compliance Audit Requirement
+
+The compliance team needs a report: which users accessed the PATIENTS table in the last 30 days, from which IPs, and using which roles.
+
+Answer:
+
+Use Snowflake ACCOUNT_USAGE views such as ACCESS_HISTORY, QUERY_HISTORY, and LOGIN_HISTORY.
+
+QUERY_HISTORY can be used to identify queries that accessed the PATIENTS table and the user and role used.
+
+LOGIN_HISTORY can be used to identify the user's login IP address.
+
+Example approach:
+
+1. Query ACCESS_HISTORY to identify access to the PATIENTS table.
+2. Use QUERY_HISTORY to identify the user, role, query, and execution time.
+3. Use LOGIN_HISTORY to identify the IP address and login information.
+4. Filter the results to the required 30-day period.
+
+The results can then be combined to create the compliance report.
+
+Scenario 5: The Contractor Dilemma
+
+An external vendor (Accenture) needs access to SALES_DB.REPORTING for 3 months. Their IPs are 172.31.0.0/16. Company policy: they must not be able to access from personal devices.
+
+Answer:
+
+Create a dedicated contractor role and user accounts for the vendor. Grant only the required access to SALES_DB.REPORTING.
+
+A network policy can be applied to restrict access to the approved IP range:
+
+172.31.0.0/16
+
+The contractor accounts should be configured with the required authentication method, preferably SSO or another company-approved strong authentication method.
+
+The access should also be reviewed and removed after 3 months.
+
+The main controls are:
+
+1. Dedicated contractor role.
+2. Least-privilege access to SALES_DB.REPORTING.
+3. Network policy allowing only the approved IP range.
+4. Strong authentication.
+5. Time-limited access and removal after 3 months.
